@@ -2,9 +2,10 @@ import { FormEvent, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Check, Eye, EyeOff, LoaderCircle, LogOut, MapPin, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import type { PickupPoint } from '../data'
 import { createPickupPoint, deletePickupPoint, loadPickupPoints, loginAdmin, updatePickupPoint, type AdminCredentials } from '../pickup-api'
+import { AdminCoordinateMap } from './AdminCoordinateMap'
 
 type PointForm = Omit<PickupPoint, 'id'>
-const EMPTY_FORM: PointForm = { name: '', address: '', time: '15 min', distance: '1.0 km', x: 50, y: 50 }
+const EMPTY_FORM: PointForm = { name: '', address: '', time: '15 min', distance: '1.0 km', lat: 12.9352, lng: 77.6245 }
 
 export function AdminPage() {
   const [credentials, setCredentials] = useState<AdminCredentials | null>(null)
@@ -33,7 +34,7 @@ export function AdminPage() {
 
   const editPoint = (point: PickupPoint) => {
     setEditingId(point.id)
-    setForm({ name: point.name, address: point.address, time: point.time, distance: point.distance, x: point.x, y: point.y })
+    setForm({ name: point.name, address: point.address, time: point.time, distance: point.distance, lat: point.lat, lng: point.lng })
     setMessage('')
     requestAnimationFrame(() => document.getElementById('point-name')?.focus())
   }
@@ -43,7 +44,7 @@ export function AdminPage() {
   const submitPoint = async (event: FormEvent) => {
     event.preventDefault()
     if (!form.name.trim() || !form.address.trim()) { setMessage('Name and address are required.'); return }
-    if (form.x < 5 || form.x > 95 || form.y < 5 || form.y > 95) { setMessage('Map coordinates must be between 5 and 95.'); return }
+    if (form.lat < -90 || form.lat > 90 || form.lng < -180 || form.lng > 180) { setMessage('Enter a valid latitude and longitude.'); return }
     setSaving(true); setMessage('')
     try {
       if (editingId) {
@@ -84,7 +85,7 @@ export function AdminPage() {
     setPoints([])
   }
 
-  const hasError = /required|between|could not|unavailable|unauthorized/i.test(message)
+  const hasError = /required|valid|could not|unavailable|unauthorized/i.test(message)
 
   return (
     <main className="admin-shell">
@@ -92,19 +93,19 @@ export function AdminPage() {
         <a className="brand" href="/"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />ADMIN STUDIO</span></a>
         <div><button className="admin-text-button" onClick={() => setDark((value) => !value)}>{dark ? 'Light mode' : 'Dark mode'}</button><button className="admin-text-button" onClick={logOut}><LogOut size={16} /> Log out</button></div>
       </header>
-      <section className="admin-intro"><div><span className="eyebrow"><MapPin size={14} /> Pickup operations</span><h1>Pickup points.</h1><p>Add locations and position each marker on the customer map with X and Y coordinates. Changes are shared through Neon.</p></div><a href="/" className="admin-text-button"><ArrowLeft size={16} /> View storefront</a></section>
+      <section className="admin-intro"><div><span className="eyebrow"><MapPin size={14} /> Pickup operations</span><h1>Pickup points.</h1><p>Add locations and place each marker precisely on Google Maps. Changes are shared through Neon.</p></div><a href="/" className="admin-text-button"><ArrowLeft size={16} /> View storefront</a></section>
       <section className="admin-grid">
         <form className="point-form" onSubmit={submitPoint} aria-busy={saving}>
           <div className="form-title"><div><span>{editingId ? 'Editing location' : 'New location'}</span><h2>{editingId ? 'Update pickup point' : 'Create pickup point'}</h2></div>{editingId && <button type="button" className="icon-button" onClick={resetForm} aria-label="Cancel editing" disabled={saving}><X size={18} /></button>}</div>
           <label>Name<input id="point-name" autoFocus value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="e.g. Foodio Bandra" disabled={saving} /></label>
           <label>Address<input value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} placeholder="Street and landmark" disabled={saving} /></label>
           <div className="form-row"><label>Prep time<input value={form.time} onChange={(event) => setForm({ ...form, time: event.target.value })} placeholder="15 min" disabled={saving} /></label><label>Distance<input value={form.distance} onChange={(event) => setForm({ ...form, distance: event.target.value })} placeholder="1.0 km" disabled={saving} /></label></div>
-          <div className="form-row"><label>Map X (%)<input type="number" min="5" max="95" value={form.x} onChange={(event) => setForm({ ...form, x: Number(event.target.value) })} disabled={saving} /></label><label>Map Y (%)<input type="number" min="5" max="95" value={form.y} onChange={(event) => setForm({ ...form, y: Number(event.target.value) })} disabled={saving} /></label></div>
-          <div className="coordinate-preview"><span className="preview-pin" style={{ left: `${form.x}%`, top: `${form.y}%` }}><MapPin size={18} /></span><small>Marker preview</small></div>
+          <div className="form-row"><label>Latitude<input type="number" min="-90" max="90" step="0.000001" value={form.lat} onChange={(event) => setForm({ ...form, lat: Number(event.target.value) })} disabled={saving} /></label><label>Longitude<input type="number" min="-180" max="180" step="0.000001" value={form.lng} onChange={(event) => setForm({ ...form, lng: Number(event.target.value) })} disabled={saving} /></label></div>
+          <AdminCoordinateMap lat={form.lat} lng={form.lng} dark={dark} onChange={(coordinates) => setForm({ ...form, ...coordinates })} />
           {message && <p className={`form-message${hasError ? ' error' : ''}`} role={hasError ? 'alert' : 'status'}>{message}</p>}
           <button className="primary-button admin-save" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={18} /> : editingId ? <Save size={18} /> : <Plus size={18} />}{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add pickup point'}</button>
         </form>
-        <div className="point-manager" aria-busy={loadingPoints}><div className="manager-heading"><span>{loadingPoints ? 'Loading' : `${points.length} active`}</span><h2>Live locations</h2></div>{loadingPoints ? <p className="manager-status" role="status"><LoaderCircle className="spin" /> Loading from Neon…</p> : <div className="admin-point-list">{points.map((point) => <article key={point.id}><span className="admin-point-number"><MapPin size={17} /></span><div><strong>{point.name}</strong><p>{point.address}</p><small>{point.time} · {point.distance} · X {point.x}, Y {point.y}</small></div><div><button onClick={() => editPoint(point)} aria-label={`Edit ${point.name}`} disabled={saving}><Pencil size={16} /></button><button onClick={() => removePoint(point.id)} aria-label={`Delete ${point.name}`} disabled={saving}><Trash2 size={16} /></button></div></article>)}</div>}</div>
+        <div className="point-manager" aria-busy={loadingPoints}><div className="manager-heading"><span>{loadingPoints ? 'Loading' : `${points.length} active`}</span><h2>Live locations</h2></div>{loadingPoints ? <p className="manager-status" role="status"><LoaderCircle className="spin" /> Loading from Neon…</p> : <div className="admin-point-list">{points.map((point) => <article key={point.id}><span className="admin-point-number"><MapPin size={17} /></span><div><strong>{point.name}</strong><p>{point.address}</p><small>{point.time} · {point.distance} · {point.lat.toFixed(5)}, {point.lng.toFixed(5)}</small></div><div><button onClick={() => editPoint(point)} aria-label={`Edit ${point.name}`} disabled={saving}><Pencil size={16} /></button><button onClick={() => removePoint(point.id)} aria-label={`Delete ${point.name}`} disabled={saving}><Trash2 size={16} /></button></div></article>)}</div>}</div>
       </section>
     </main>
   )

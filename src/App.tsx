@@ -67,7 +67,7 @@ function Storefront() {
         <Hero />
         <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span></div>
         <MenuSection onAdd={addItem} />
-        <PickupMap points={points} selected={pickup} onSelect={setPickup} statusMessage={pickupStatus} />
+        <PickupMap points={points} selected={pickup} onSelect={setPickup} statusMessage={pickupStatus} dark={dark} />
         <StorySection />
         <section className="closing-cta"><span>Still thinking?</span><h2>Your shawarma<br />is waiting.</h2><a href="#menu" className="primary-button">Get yours <ArrowUpRight /></a></section>
       </main>

@@ -14,7 +14,7 @@ const ALLOWED_ORIGINS = new Set([
   "http://127.0.0.1:5173",
 ]);
 
-type PickupInput = { id?: string; name?: string; address?: string; time?: string; distance?: string; x?: number; y?: number };
+type PickupInput = { id?: string; name?: string; address?: string; time?: string; distance?: string; lat?: number; lng?: number };
 
 function cors(request: Request) {
   const origin = request.headers.get("origin");
@@ -48,8 +48,8 @@ function validInput(input: PickupInput) {
     && typeof input.address === "string" && input.address.trim().length > 0
     && typeof input.time === "string" && input.time.trim().length > 0
     && typeof input.distance === "string" && input.distance.trim().length > 0
-    && typeof input.x === "number" && input.x >= 5 && input.x <= 95
-    && typeof input.y === "number" && input.y >= 5 && input.y <= 95;
+    && typeof input.lat === "number" && input.lat >= -90 && input.lat <= 90
+    && typeof input.lng === "number" && input.lng >= -180 && input.lng <= 180;
 }
 
 function slug(name: string) {
@@ -68,7 +68,7 @@ export default async function pickups(request: Request): Promise<Response> {
   if (request.method === "GET") {
     const result = await pool.query(`
       SELECT id, name, address, prep_time AS time, distance,
-             map_x::float8 AS x, map_y::float8 AS y
+             latitude::float8 AS lat, longitude::float8 AS lng
       FROM pickup_points
       ORDER BY sort_order, created_at
     `);
@@ -79,23 +79,23 @@ export default async function pickups(request: Request): Promise<Response> {
   const input = await request.json().catch(() => ({})) as PickupInput;
 
   if (request.method === "POST") {
-    if (!validInput(input)) return json(request, { error: "Enter valid pickup point details and coordinates from 5 to 95." }, 400);
+    if (!validInput(input)) return json(request, { error: "Enter valid pickup details, latitude, and longitude." }, 400);
     const result = await pool.query(`
-      INSERT INTO pickup_points (id, name, address, prep_time, distance, map_x, map_y, sort_order)
+      INSERT INTO pickup_points (id, name, address, prep_time, distance, latitude, longitude, sort_order)
       VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT coalesce(max(sort_order), 0) + 1 FROM pickup_points))
-      RETURNING id, name, address, prep_time AS time, distance, map_x::float8 AS x, map_y::float8 AS y
-    `, [slug(input.name!), input.name!.trim(), input.address!.trim(), input.time!.trim(), input.distance!.trim(), input.x, input.y]);
+      RETURNING id, name, address, prep_time AS time, distance, latitude::float8 AS lat, longitude::float8 AS lng
+    `, [slug(input.name!), input.name!.trim(), input.address!.trim(), input.time!.trim(), input.distance!.trim(), input.lat, input.lng]);
     return json(request, result.rows[0], 201);
   }
 
   if (request.method === "PUT") {
-    if (typeof input.id !== "string" || !validInput(input)) return json(request, { error: "Enter valid pickup point details and coordinates from 5 to 95." }, 400);
+    if (typeof input.id !== "string" || !validInput(input)) return json(request, { error: "Enter valid pickup details, latitude, and longitude." }, 400);
     const result = await pool.query(`
       UPDATE pickup_points
-      SET name = $2, address = $3, prep_time = $4, distance = $5, map_x = $6, map_y = $7, updated_at = now()
+      SET name = $2, address = $3, prep_time = $4, distance = $5, latitude = $6, longitude = $7, updated_at = now()
       WHERE id = $1
-      RETURNING id, name, address, prep_time AS time, distance, map_x::float8 AS x, map_y::float8 AS y
-    `, [input.id, input.name!.trim(), input.address!.trim(), input.time!.trim(), input.distance!.trim(), input.x, input.y]);
+      RETURNING id, name, address, prep_time AS time, distance, latitude::float8 AS lat, longitude::float8 AS lng
+    `, [input.id, input.name!.trim(), input.address!.trim(), input.time!.trim(), input.distance!.trim(), input.lat, input.lng]);
     return result.rows[0] ? json(request, result.rows[0]) : json(request, { error: "Pickup point not found." }, 404);
   }
 
