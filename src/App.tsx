@@ -6,8 +6,8 @@ import { MenuSection } from './components/MenuSection'
 import { PickupMap } from './components/PickupMap'
 import { StorySection } from './components/StorySection'
 import { CartDrawer, type CartLine } from './components/CartDrawer'
-import type { MenuItem } from './data'
-import { loadPickupPoints } from './pickup-storage'
+import { defaultPickupPoints, type MenuItem } from './data'
+import { loadPickupPoints } from './pickup-api'
 import { AdminPage } from './components/AdminPage'
 
 export function App() {
@@ -19,8 +19,9 @@ export function App() {
 function Storefront() {
   const [dark, setDark] = useState(() => localStorage.getItem('foodio-theme') === 'dark')
   const [lines, setLines] = useState<CartLine[]>([])
-  const [points, setPoints] = useState(loadPickupPoints)
-  const [pickup, setPickup] = useState(points[0])
+  const [points, setPoints] = useState(defaultPickupPoints)
+  const [pickup, setPickup] = useState(defaultPickupPoints[0])
+  const [pickupStatus, setPickupStatus] = useState('Loading live pickup points…')
   const [cartOpen, setCartOpen] = useState(false)
   const [completed, setCompleted] = useState(false)
   const count = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines])
@@ -31,17 +32,16 @@ function Storefront() {
   }, [dark])
 
   useEffect(() => {
-    const refresh = () => {
-      const next = loadPickupPoints()
-      setPoints(next)
-      setPickup((current) => next.find((point) => point.id === current.id) ?? next[0])
-    }
-    window.addEventListener('storage', refresh)
-    window.addEventListener('foodio-pickups-updated', refresh)
-    return () => {
-      window.removeEventListener('storage', refresh)
-      window.removeEventListener('foodio-pickups-updated', refresh)
-    }
+    let active = true
+    loadPickupPoints()
+      .then((next) => {
+        if (!active || next.length === 0) return
+        setPoints(next)
+        setPickup((current) => next.find((point) => point.id === current.id) ?? next[0])
+        setPickupStatus('')
+      })
+      .catch(() => active && setPickupStatus('Live locations are temporarily unavailable. Showing our usual pickup points.'))
+    return () => { active = false }
   }, [])
 
   const addItem = (item: MenuItem) => {
@@ -67,7 +67,7 @@ function Storefront() {
         <Hero />
         <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span></div>
         <MenuSection onAdd={addItem} />
-        <PickupMap points={points} selected={pickup} onSelect={setPickup} />
+        <PickupMap points={points} selected={pickup} onSelect={setPickup} statusMessage={pickupStatus} />
         <StorySection />
         <section className="closing-cta"><span>Still thinking?</span><h2>Your shawarma<br />is waiting.</h2><a href="#menu" className="primary-button">Get yours <ArrowUpRight /></a></section>
       </main>

@@ -1,15 +1,16 @@
 import { Check, MapPin, Navigation } from 'lucide-react'
 import type { PickupPoint } from '../data'
 
-type PickupMapProps = { points: PickupPoint[]; selected: PickupPoint; onSelect: (point: PickupPoint) => void }
+type PickupMapProps = { points: PickupPoint[]; selected: PickupPoint; onSelect: (point: PickupPoint) => void; statusMessage?: string }
 
-export function PickupMap({ points, selected, onSelect }: PickupMapProps) {
+export function PickupMap({ points, selected, onSelect, statusMessage }: PickupMapProps) {
   return (
     <section className="pickup-section" id="pickup">
       <div className="pickup-panel">
         <span className="section-number">02</span>
         <h2>Choose where<br />we meet.</h2>
         <p>Your meal is cooked at our studio and timed to arrive warm at the pickup spot you choose.</p>
+        {statusMessage && <p className="pickup-status" role="status">{statusMessage}</p>}
         <div className="pickup-list" role="radiogroup" aria-label="Choose a pickup point">
           {points.map((point) => (
             <button key={point.id} className={selected.id === point.id ? 'selected' : ''} role="radio" aria-checked={selected.id === point.id} onClick={() => onSelect(point)}>

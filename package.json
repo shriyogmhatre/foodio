@@ -10,15 +10,20 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@neon/config": "1.8.3",
+    "@neon/env": "1.4.8",
+    "@neon/functions": "0.11.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
+    "lucide-react": "latest",
+    "pg": "8.23.1",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@types/pg": "8.23.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "latest",
