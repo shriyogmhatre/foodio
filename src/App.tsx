@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUpRight, Instagram } from 'lucide-react'
+import { ArrowUpRight, Camera } from 'lucide-react'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { MenuSection } from './components/MenuSection'
 import { PickupMap } from './components/PickupMap'
 import { StorySection } from './components/StorySection'
 import { CartDrawer, type CartLine } from './components/CartDrawer'
-import { pickupPoints, type MenuItem } from './data'
+import type { MenuItem } from './data'
+import { loadPickupPoints } from './pickup-storage'
+import { AdminPage } from './components/AdminPage'
 
 export function App() {
+  if (window.location.pathname.startsWith('/admin')) return <AdminPage />
+
+  return <Storefront />
+}
+
+function Storefront() {
   const [dark, setDark] = useState(() => localStorage.getItem('foodio-theme') === 'dark')
   const [lines, setLines] = useState<CartLine[]>([])
-  const [pickup, setPickup] = useState(pickupPoints[0])
+  const [points, setPoints] = useState(loadPickupPoints)
+  const [pickup, setPickup] = useState(points[0])
   const [cartOpen, setCartOpen] = useState(false)
   const [completed, setCompleted] = useState(false)
   const count = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines])
@@ -20,6 +29,20 @@ export function App() {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
     localStorage.setItem('foodio-theme', dark ? 'dark' : 'light')
   }, [dark])
+
+  useEffect(() => {
+    const refresh = () => {
+      const next = loadPickupPoints()
+      setPoints(next)
+      setPickup((current) => next.find((point) => point.id === current.id) ?? next[0])
+    }
+    window.addEventListener('storage', refresh)
+    window.addEventListener('foodio-pickups-updated', refresh)
+    return () => {
+      window.removeEventListener('storage', refresh)
+      window.removeEventListener('foodio-pickups-updated', refresh)
+    }
+  }, [])
 
   const addItem = (item: MenuItem) => {
     setLines((current) => {
@@ -44,11 +67,11 @@ export function App() {
         <Hero />
         <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span></div>
         <MenuSection onAdd={addItem} />
-        <PickupMap selected={pickup} onSelect={setPickup} />
+        <PickupMap points={points} selected={pickup} onSelect={setPickup} />
         <StorySection />
         <section className="closing-cta"><span>Still thinking?</span><h2>Your shawarma<br />is waiting.</h2><a href="#menu" className="primary-button">Get yours <ArrowUpRight /></a></section>
       </main>
-      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Hot wraps. Cool pickup.<br />Made in Bengaluru.</p><div><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">About</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram /></a><small>© 2026 Foodio</small></footer>
+      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Hot wraps. Cool pickup.<br />Made in Bengaluru.</p><div><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">About</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio</small></footer>
       <CartDrawer open={cartOpen} lines={lines} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onCheckout={checkout} />
       {count > 0 && <button className="mobile-cart" onClick={() => { setCompleted(false); setCartOpen(true) }}><span>View bag · {count} item{count === 1 ? '' : 's'}</span><strong>₹{lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)}</strong></button>}
     </>

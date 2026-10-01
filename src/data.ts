@@ -73,7 +73,7 @@ export const menu: MenuItem[] = [
   },
 ]
 
-export const pickupPoints: PickupPoint[] = [
+export const defaultPickupPoints: PickupPoint[] = [
   { id: 'koramangala', name: 'Studio Koramangala', address: '80 Feet Road, 4th Block', time: '12 min', distance: '1.2 km', x: 38, y: 31 },
   { id: 'indiranagar', name: 'Indiranagar Window', address: '12th Main, near Metro', time: '18 min', distance: '2.8 km', x: 70, y: 44 },
   { id: 'hsr', name: 'HSR Pickup Bar', address: '27th Main, Sector 2', time: '22 min', distance: '4.1 km', x: 52, y: 72 },
