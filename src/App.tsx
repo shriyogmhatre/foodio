@@ -71,7 +71,7 @@ function Storefront() {
         <StorySection />
         <section className="closing-cta"><span>Still thinking?</span><h2>Your shawarma<br />is waiting.</h2><a href="#menu" className="primary-button">Get yours <ArrowUpRight /></a></section>
       </main>
-      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Hot wraps. Cool pickup.<br />Made in Bengaluru.</p><div><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">About</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio</small></footer>
+      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Hot wraps. Cool pickup.<br />Made in Panvel.</p><div><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">About</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio</small></footer>
       <CartDrawer open={cartOpen} lines={lines} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onCheckout={checkout} />
       {count > 0 && <button className="mobile-cart" onClick={() => { setCompleted(false); setCartOpen(true) }}><span>View bag · {count} item{count === 1 ? '' : 's'}</span><strong>₹{lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)}</strong></button>}
     </>

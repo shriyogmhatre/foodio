@@ -5,7 +5,7 @@ import { createPickupPoint, deletePickupPoint, loadPickupPoints, loginAdmin, upd
 import { AdminCoordinateMap } from './AdminCoordinateMap'
 
 type PointForm = Omit<PickupPoint, 'id'>
-const EMPTY_FORM: PointForm = { name: '', address: '', time: '15 min', distance: '1.0 km', lat: 12.9352, lng: 77.6245 }
+const EMPTY_FORM: PointForm = { name: '', address: '', time: '15 min', distance: '1.0 km', lat: 18.994, lng: 73.1118 }
 
 export function AdminPage() {
   const [credentials, setCredentials] = useState<AdminCredentials | null>(null)

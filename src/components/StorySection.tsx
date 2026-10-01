@@ -3,7 +3,7 @@ import { Heart, Leaf, Sparkles } from 'lucide-react'
 export function StorySection() {
   return (
     <section className="story-section" id="story">
-      <div className="story-image"><img src="https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1100&q=85" alt="Chef preparing food in the studio kitchen" loading="lazy" /><span>Est. Bengaluru<br />2026</span></div>
+      <div className="story-image"><img src="https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1100&q=85" alt="Chef preparing food in the studio kitchen" loading="lazy" /><span>Est. Panvel<br />2026</span></div>
       <div className="story-copy">
         <span className="section-number">03</span>
         <h2>A kitchen with<br />creative energy.</h2>

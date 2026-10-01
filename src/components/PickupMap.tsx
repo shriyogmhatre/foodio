@@ -63,8 +63,8 @@ export function PickupMap({ points, selected, onSelect, statusMessage, dark }: P
           ))}
         </div>
       </div>
-      <div className="map-canvas google-map-shell" aria-label="Google Map showing Foodio pickup points in Bengaluru">
-        {!apiKey || loadError ? <div className="map-state error" role="alert"><MapPin /><strong>Map unavailable</strong><span>Choose a pickup point from the list.</span></div> : !isLoaded ? <div className="map-state" role="status"><LoaderCircle className="spin" /><strong>Loading Google Maps…</strong></div> : <GoogleMap mapContainerClassName="google-map" center={{ lat: selected.lat, lng: selected.lng }} zoom={12} options={dark ? darkOptions : lightOptions} onLoad={(map) => { mapRef.current = map }} onUnmount={() => { mapRef.current = null }}>
+      <div className="map-canvas google-map-shell" aria-label="Google Map showing the Foodio pickup point at Vadale Lake, Panvel">
+        {!apiKey || loadError ? <div className="map-state error" role="alert"><MapPin /><strong>Map unavailable</strong><span>Choose a pickup point from the list.</span></div> : !isLoaded ? <div className="map-state" role="status"><LoaderCircle className="spin" /><strong>Loading Google Maps…</strong></div> : <GoogleMap mapContainerClassName="google-map" center={{ lat: selected.lat, lng: selected.lng }} zoom={15} options={dark ? darkOptions : lightOptions} onLoad={(map) => { mapRef.current = map }} onUnmount={() => { mapRef.current = null }}>
           {points.map((point, index) => <MarkerF key={point.id} position={{ lat: point.lat, lng: point.lng }} title={point.name} label={{ text: String(index + 1), color: '#ffffff', fontWeight: '700' }} icon={{ url: selected.id === point.id ? 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png' : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' }} onClick={() => onSelect(point)} />)}
           {userPosition && <MarkerF position={userPosition} title="Your location" icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }} />}
         </GoogleMap>}

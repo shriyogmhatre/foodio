@@ -70,6 +70,7 @@ export default async function pickups(request: Request): Promise<Response> {
       SELECT id, name, address, prep_time AS time, distance,
              latitude::float8 AS lat, longitude::float8 AS lng
       FROM pickup_points
+      WHERE active = true
       ORDER BY sort_order, created_at
     `);
     return json(request, result.rows);
@@ -102,7 +103,7 @@ export default async function pickups(request: Request): Promise<Response> {
   if (request.method === "DELETE") {
     const id = url.searchParams.get("id");
     if (!id) return json(request, { error: "Pickup point id is required." }, 400);
-    const count = await pool.query("SELECT count(*)::int AS count FROM pickup_points");
+    const count = await pool.query("SELECT count(*)::int AS count FROM pickup_points WHERE active = true");
     if (count.rows[0].count <= 1) return json(request, { error: "At least one pickup point is required." }, 409);
     const result = await pool.query("DELETE FROM pickup_points WHERE id = $1 RETURNING id", [id]);
     return result.rows[0] ? json(request, { deleted: id }) : json(request, { error: "Pickup point not found." }, 404);
