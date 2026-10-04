@@ -6,7 +6,7 @@ import { MenuSection } from './components/MenuSection'
 import { PickupMap } from './components/PickupMap'
 import { StorySection } from './components/StorySection'
 import { CartDrawer, type CartLine } from './components/CartDrawer'
-import { defaultPickupPoints, type MenuItem } from './data'
+import { defaultPickupPoints, type MenuItem, type PickupPoint } from './data'
 import { loadPickupPoints } from './pickup-api'
 import { AdminPage } from './components/AdminPage'
 
@@ -20,11 +20,12 @@ function Storefront() {
   const [dark, setDark] = useState(() => localStorage.getItem('foodio-theme') === 'dark')
   const [lines, setLines] = useState<CartLine[]>([])
   const [points, setPoints] = useState(defaultPickupPoints)
-  const [pickup, setPickup] = useState(defaultPickupPoints[0])
+  const [pickup, setPickup] = useState<PickupPoint | null>(null)
   const [pickupStatus, setPickupStatus] = useState('Loading live pickup points…')
   const [cartOpen, setCartOpen] = useState(false)
   const [completed, setCompleted] = useState(false)
   const count = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines])
+  const mapPickup = pickup ?? points[0] ?? defaultPickupPoints[0]
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
@@ -37,7 +38,7 @@ function Storefront() {
       .then((next) => {
         if (!active || next.length === 0) return
         setPoints(next)
-        setPickup((current) => next.find((point) => point.id === current.id) ?? next[0])
+        setPickup((current) => current ? next.find((point) => point.id === current.id) ?? null : null)
         setPickupStatus('')
       })
       .catch(() => active && setPickupStatus('Live locations are temporarily unavailable. Showing our usual pickup points.'))
@@ -45,10 +46,13 @@ function Storefront() {
   }, [])
 
   const addItem = (item: MenuItem) => {
+    if (lines.length === 0) setPickup(null)
     setLines((current) => {
       const found = current.find((line) => line.item.id === item.id)
       return found ? current.map((line) => line.item.id === item.id ? { ...line, quantity: line.quantity + 1 } : line) : [...current, { item, quantity: 1 }]
     })
+    setCompleted(false)
+    setCartOpen(true)
   }
 
   const changeQuantity = (id: string, delta: number) => {
@@ -56,6 +60,7 @@ function Storefront() {
   }
 
   const checkout = () => {
+    if (!pickup) return
     setCompleted(true)
     setLines([])
   }
@@ -67,12 +72,12 @@ function Storefront() {
         <Hero />
         <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span></div>
         <MenuSection onAdd={addItem} />
-        <PickupMap points={points} selected={pickup} onSelect={setPickup} statusMessage={pickupStatus} dark={dark} />
+        <PickupMap points={points} selected={mapPickup} onSelect={setPickup} statusMessage={pickupStatus} dark={dark} />
         <StorySection />
         <section className="closing-cta"><span>Still thinking?</span><h2>Your shawarma<br />is waiting.</h2><a href="#menu" className="primary-button">Get yours <ArrowUpRight /></a></section>
       </main>
       <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Hot wraps. Cool pickup.<br />Made in Panvel.</p><div><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">About</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio</small></footer>
-      <CartDrawer open={cartOpen} lines={lines} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onCheckout={checkout} />
+      <CartDrawer open={cartOpen} lines={lines} points={points} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onSelectPickup={setPickup} onCheckout={checkout} />
       {count > 0 && <button className="mobile-cart" onClick={() => { setCompleted(false); setCartOpen(true) }}><span>View bag · {count} item{count === 1 ? '' : 's'}</span><strong>₹{lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)}</strong></button>}
     </>
   )
