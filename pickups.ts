@@ -9,6 +9,8 @@ const ADMIN_USERNAME = "foodio";
 const PASSWORD_SALT = "465eea3443013198b592129340608fd0";
 const PASSWORD_HASH = "abd57c7cff2bec96d6b4fab2ce5895e5583350e3099a8bf2dc8d82ea8b7ae832784d535b6d6a2ea29736d1d518e0e1d62402f8f78d3f8873f8378ddea6ac9574";
 const ALLOWED_ORIGINS = new Set([
+  "https://foodio.food",
+  "https://www.foodio.food",
   "https://foodio-sigma.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
