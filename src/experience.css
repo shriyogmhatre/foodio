@@ -1,4 +1,26 @@
 /* Motion and mobile interaction layer. */
+/* Frost the entire sticky area, including the space around the floating bar. */
+.site-header {
+  background: var(--paper);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  backdrop-filter: blur(24px) saturate(130%);
+}
+.site-header::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 92%, transparent), transparent);
+  pointer-events: none;
+}
+.header-inner {
+  background: var(--paper);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 .marquee { background: #171912; color: var(--acid); }
 .skip-link { position: fixed; left: 20px; top: -80px; z-index: 300; background: var(--ink); color: var(--paper); padding: 14px 20px; border-radius: 12px; }
 .skip-link:focus { top: 12px; }
