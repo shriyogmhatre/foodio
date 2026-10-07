@@ -10,6 +10,7 @@ import { defaultPickupPoints, type MenuItem, type PickupPoint } from './data'
 import { loadPickupPoints } from './pickup-api'
 import { AdminPage } from './components/AdminPage'
 import { ProcessSection } from './components/ProcessSection'
+import { Experience } from './components/Experience'
 
 export function App() {
   if (window.location.pathname.startsWith('/admin')) return <AdminPage />
@@ -69,6 +70,7 @@ function Storefront() {
   return (
     <>
       <Header dark={dark} cartCount={count} onToggleTheme={() => setDark((value) => !value)} onOpenCart={() => { setCompleted(false); setCartOpen(true) }} />
+      <a href="#menu" className="skip-link">Skip to menu</a>
       <main>
         <Hero />
         <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ GOOD MOOD FOOD ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ GOOD MOOD FOOD ✦ </span></div>
@@ -80,6 +82,7 @@ function Storefront() {
       </main>
       <footer><div className="footer-lead"><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Big flavour, timed for pickup.<br />Born and built in Panvel.</p></div><div className="footer-links"><span>Explore</span><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">Our story</a></div><div className="footer-links"><span>Visit</span><a href="/admin">Admin studio</a><a href="mailto:hello@foodio.food">hello@foodio.food</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio · Made fresh in Panvel</small></footer>
       <CartDrawer open={cartOpen} lines={lines} points={points} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onSelectPickup={setPickup} onCheckout={checkout} />
+      <Experience count={count} onBag={() => { setCompleted(false); setCartOpen(true) }} />
       {count > 0 && <button className="mobile-cart" onClick={() => { setCompleted(false); setCartOpen(true) }}><span>View bag · {count} item{count === 1 ? '' : 's'}</span><strong>₹{lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)}</strong></button>}
     </>
   )

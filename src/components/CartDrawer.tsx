@@ -27,20 +27,31 @@ function distanceKm(latitude: number, longitude: number, point: PickupPoint) {
 
 export function CartDrawer({ open, lines, points, pickup, completed, onClose, onChange, onSelectPickup, onCheckout }: CartDrawerProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const drawerRef = useRef<HTMLElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
   const [locating, setLocating] = useState(false)
   const [locationMessage, setLocationMessage] = useState('')
   const subtotal = lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)
 
   useEffect(() => {
-    if (open) closeRef.current?.focus()
-  }, [open])
-
-  useEffect(() => {
     if (!open) return
-    const handleKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    const previous = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeRef.current?.focus()
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current()
+      if (event.key !== 'Tab') return
+      const nodes = drawerRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]')
+      if (!nodes?.length) return
+      const first = nodes[0], last = nodes[nodes.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
     document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [open, onClose])
+    return () => { document.removeEventListener('keydown', handleKey); document.body.style.overflow = overflow; previous?.focus() }
+  }, [open])
 
   const suggestNearest = () => {
     if (points.length === 0) { setLocationMessage('No pickup points are available right now.'); return }
@@ -66,7 +77,8 @@ export function CartDrawer({ open, lines, points, pickup, completed, onClose, on
 
   return (
     <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <aside className="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+      <aside ref={drawerRef} className="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+        <span className="sheet-handle" aria-hidden="true" />
         <div className="drawer-head"><div><span>Your order</span><h2 id="cart-title">The good stuff.</h2></div><button ref={closeRef} className="icon-button" onClick={onClose} aria-label="Close bag"><X /></button></div>
         {completed ? (
           <div className="success-state"><CheckCircle2 size={56} /><h3>Order confirmed!</h3><p>We’ll have it warm and ready at <strong>{pickup?.name ?? 'your pickup point'}</strong>.</p><button className="primary-button" onClick={onClose}>Done</button></div>
@@ -74,6 +86,7 @@ export function CartDrawer({ open, lines, points, pickup, completed, onClose, on
           <div className="empty-state"><ShoppingBag size={42} /><h3>Your bag is empty.</h3><p>Add a wrap or plate and we’ll get cooking.</p><button className="primary-button" onClick={onClose}>Browse menu</button></div>
         ) : (
           <>
+            <div className="bag-steps" aria-label="Order progress"><span className="done">01 · Your food</span><span className={pickup ? 'done' : ''}>02 · Pickup spot</span></div>
             <div className="cart-lines">
               {lines.map(({ item, quantity }) => (
                 <div className="cart-line" key={item.id}>

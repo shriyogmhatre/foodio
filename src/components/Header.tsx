@@ -11,11 +11,12 @@ type HeaderProps = {
 export function Header({ dark, cartCount, onToggleTheme, onOpenCart }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const firstLinkRef = useRef<HTMLAnchorElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!menuOpen) return
     firstLinkRef.current?.focus()
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false) }
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setMenuOpen(false); menuButtonRef.current?.focus() } }
     document.addEventListener('keydown', closeOnEscape)
     return () => document.removeEventListener('keydown', closeOnEscape)
   }, [menuOpen])
@@ -41,7 +42,7 @@ export function Header({ dark, cartCount, onToggleTheme, onOpenCart }: HeaderPro
             <span>Bag</span>
             <span className="cart-count" aria-label={`${cartCount} items`}>{cartCount}</span>
           </button>
-          <button className="mobile-menu-button" onClick={() => setMenuOpen((value) => !value)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}>
+          <button ref={menuButtonRef} className="mobile-menu-button" onClick={() => setMenuOpen((value) => !value)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}>
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
