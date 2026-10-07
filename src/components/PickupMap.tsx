@@ -1,47 +1,27 @@
-import { useEffect, useRef, useState } from 'react'
-import { GoogleMap, MarkerF, useJsApiLoader } from '@react-google-maps/api'
-import { Check, LoaderCircle, MapPin, Navigation } from 'lucide-react'
+import { useState } from 'react'
+import { FreeMap } from './FreeMap'
+import { Check, MapPin, Navigation } from 'lucide-react'
 import type { PickupPoint } from '../data'
 
 type PickupMapProps = { points: PickupPoint[]; selected: PickupPoint; onSelect: (point: PickupPoint) => void; statusMessage?: string; dark: boolean }
 
-const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
-const lightOptions: google.maps.MapOptions = { disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: 'cooperative' }
-const darkOptions: google.maps.MapOptions = {
-  ...lightOptions,
-  styles: [
-    { elementType: 'geometry', stylers: [{ color: '#24251f' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#b8b8aa' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#24251f' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#3a3b33' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#565844' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#171b1c' }] },
-    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  ],
-}
-
 export function PickupMap({ points, selected, onSelect, statusMessage, dark }: PickupMapProps) {
-  const mapRef = useRef<google.maps.Map | null>(null)
-  const [userPosition, setUserPosition] = useState<google.maps.LatLngLiteral | null>(null)
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number } | null>(null)
+  const [locating, setLocating] = useState(false)
   const [locationMessage, setLocationMessage] = useState('')
-  const { isLoaded, loadError } = useJsApiLoader({ id: 'foodio-google-maps', googleMapsApiKey: apiKey })
-
-  useEffect(() => {
-    mapRef.current?.panTo({ lat: selected.lat, lng: selected.lng })
-  }, [selected])
 
   const locate = () => {
     if (!navigator.geolocation) { setLocationMessage('Location is not supported by this browser.'); return }
     setLocationMessage('Finding you…')
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         const position = { lat: coords.latitude, lng: coords.longitude }
         setUserPosition(position)
-        mapRef.current?.panTo(position)
-        mapRef.current?.setZoom(14)
-        setLocationMessage('Your location is shown in blue.')
+        setLocating(false)
+        setLocationMessage('Your location is marked in blue when within this map view. Use the bag for nearby pickup suggestions.')
       },
-      () => setLocationMessage('We could not access your location.'),
+      () => { setLocating(false); setLocationMessage('We could not access your location. Please choose a pickup point from the list.') },
       { enableHighAccuracy: true, timeout: 8000 },
     )
   }
@@ -64,12 +44,9 @@ export function PickupMap({ points, selected, onSelect, statusMessage, dark }: P
           ))}
         </div>
       </div>
-      <div className="map-canvas google-map-shell" aria-label="Google Map showing the Foodio pickup point at Vadale Lake, Panvel">
-        {!apiKey || loadError ? <div className="map-state error" role="alert"><MapPin /><strong>Map unavailable</strong><span>Choose a pickup point from the list.</span></div> : !isLoaded ? <div className="map-state" role="status"><LoaderCircle className="spin" /><strong>Loading Google Maps…</strong></div> : <GoogleMap mapContainerClassName="google-map" center={{ lat: selected.lat, lng: selected.lng }} zoom={15} options={dark ? darkOptions : lightOptions} onLoad={(map) => { mapRef.current = map }} onUnmount={() => { mapRef.current = null }}>
-          {points.map((point, index) => <MarkerF key={point.id} position={{ lat: point.lat, lng: point.lng }} title={point.name} label={{ text: String(index + 1), color: '#ffffff', fontWeight: '700' }} icon={{ url: selected.id === point.id ? 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png' : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' }} onClick={() => onSelect(point)} />)}
-          {userPosition && <MarkerF position={userPosition} title="Your location" icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }} />}
-        </GoogleMap>}
-        <button className="locate-button" onClick={locate} disabled={!isLoaded || Boolean(loadError)} aria-describedby="location-status"><Navigation size={18} /> Locate me</button>
+      <div className="map-canvas" aria-label="Foodio pickup map at Vadale Lake, Panvel">
+        <FreeMap center={selected} points={points} selectedId={selected.id} dark={dark} userPosition={userPosition} onSelect={(id) => { const point = points.find((item) => item.id === id); if (point) onSelect(point) }} label="Pickup points around Vadale Lake" />
+        <button className="locate-button" onClick={locate} disabled={locating} aria-describedby="location-status"><Navigation size={18} /> {locating ? 'Locating…' : 'Locate me'}</button>
         <span id="location-status" className="sr-only" role="status">{locationMessage}</span>
         <div className="map-selection"><span>Selected pickup</span><strong>{selected.name}</strong><small><i /> {selected.time} prep · {selected.distance} away</small></div>
       </div>

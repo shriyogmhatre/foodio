@@ -13,8 +13,8 @@
     "@neon/config": "1.8.3",
     "@neon/env": "1.4.8",
     "@neon/functions": "0.11.0",
-    "@react-google-maps/api": "2.20.8",
     "@vitejs/plugin-react": "latest",
+    "leaflet": "1.9.4",
     "lucide-react": "latest",
     "pg": "8.23.1",
     "react": "latest",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
-    "@types/google.maps": "3.66.4",
+    "@types/leaflet": "1.9.22",
     "@types/pg": "8.23.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
