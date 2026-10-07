@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUpRight, Camera } from 'lucide-react'
+import { ArrowUpRight, Camera, MapPin } from 'lucide-react'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { MenuSection } from './components/MenuSection'
@@ -9,6 +9,7 @@ import { CartDrawer, type CartLine } from './components/CartDrawer'
 import { defaultPickupPoints, type MenuItem, type PickupPoint } from './data'
 import { loadPickupPoints } from './pickup-api'
 import { AdminPage } from './components/AdminPage'
+import { ProcessSection } from './components/ProcessSection'
 
 export function App() {
   if (window.location.pathname.startsWith('/admin')) return <AdminPage />
@@ -70,13 +71,14 @@ function Storefront() {
       <Header dark={dark} cartCount={count} onToggleTheme={() => setDark((value) => !value)} onOpenCart={() => { setCompleted(false); setCartOpen(true) }} />
       <main>
         <Hero />
-        <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ </span></div>
+        <div className="marquee" aria-hidden="true"><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ GOOD MOOD FOOD ✦ </span><span>CHARRED FRESH ✦ WRAPPED WITH LOVE ✦ PICKED UP CLOSE ✦ GOOD MOOD FOOD ✦ </span></div>
         <MenuSection onAdd={addItem} />
+        <ProcessSection />
         <PickupMap points={points} selected={mapPickup} onSelect={setPickup} statusMessage={pickupStatus} dark={dark} />
         <StorySection />
-        <section className="closing-cta"><span>Still thinking?</span><h2>Your shawarma<br />is waiting.</h2><a href="#menu" className="primary-button">Get yours <ArrowUpRight /></a></section>
+        <section className="closing-cta"><div className="cta-pin"><MapPin size={18} /> Made in Panvel</div><span>Hot, fresh, close by</span><h2>Your next favourite<br />is waiting.</h2><p>Choose your food. Choose your pickup. We’ll handle the delicious part.</p><a href="#menu" className="primary-button">Build your order <ArrowUpRight /></a></section>
       </main>
-      <footer><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Hot wraps. Cool pickup.<br />Made in Panvel.</p><div><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">About</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio</small></footer>
+      <footer><div className="footer-lead"><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Big flavour, timed for pickup.<br />Born and built in Panvel.</p></div><div className="footer-links"><span>Explore</span><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">Our story</a></div><div className="footer-links"><span>Visit</span><a href="/admin">Admin studio</a><a href="mailto:hello@foodio.food">hello@foodio.food</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio · Made fresh in Panvel</small></footer>
       <CartDrawer open={cartOpen} lines={lines} points={points} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onSelectPickup={setPickup} onCheckout={checkout} />
       {count > 0 && <button className="mobile-cart" onClick={() => { setCompleted(false); setCartOpen(true) }}><span>View bag · {count} item{count === 1 ? '' : 's'}</span><strong>₹{lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)}</strong></button>}
     </>

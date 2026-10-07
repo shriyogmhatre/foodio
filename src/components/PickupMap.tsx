@@ -49,7 +49,8 @@ export function PickupMap({ points, selected, onSelect, statusMessage, dark }: P
   return (
     <section className="pickup-section" id="pickup">
       <div className="pickup-panel">
-        <span className="section-number">02</span>
+        <div className="pickup-heading-row"><span className="section-number">02</span><span className="pickup-live"><i /> {points.length} live point{points.length === 1 ? '' : 's'}</span></div>
+        <span className="section-kicker">Pickup network</span>
         <h2>Choose where<br />we meet.</h2>
         <p>Your meal is cooked at our studio and timed to arrive warm at the pickup spot you choose.</p>
         {statusMessage && <p className="pickup-status" role="status">{statusMessage}</p>}
@@ -70,7 +71,7 @@ export function PickupMap({ points, selected, onSelect, statusMessage, dark }: P
         </GoogleMap>}
         <button className="locate-button" onClick={locate} disabled={!isLoaded || Boolean(loadError)} aria-describedby="location-status"><Navigation size={18} /> Locate me</button>
         <span id="location-status" className="sr-only" role="status">{locationMessage}</span>
-        <div className="map-selection"><span>Picking up at</span><strong>{selected.name}</strong><small>{selected.time} prep · {selected.distance} away</small></div>
+        <div className="map-selection"><span>Selected pickup</span><strong>{selected.name}</strong><small><i /> {selected.time} prep · {selected.distance} away</small></div>
       </div>
     </section>
   )

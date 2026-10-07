@@ -12,6 +12,8 @@ const ALLOWED_ORIGINS = new Set([
   "https://foodio.food",
   "https://www.foodio.food",
   "https://foodio-sigma.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ]);
