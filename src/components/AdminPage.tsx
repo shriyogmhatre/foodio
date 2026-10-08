@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Check, Eye, EyeOff, LoaderCircle, LogOut, MapPin, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Check, Eye, EyeOff, LoaderCircle, LogOut, Mail, MapPin, Pencil, Phone, Plus, Search, Save, Trash2, Users, X } from 'lucide-react'
 import type { PickupPoint } from '../data'
-import { createPickupPoint, deletePickupPoint, loadPickupPoints, loginAdmin, updatePickupPoint, type AdminCredentials } from '../pickup-api'
+import { createPickupPoint, deletePickupPoint, loadAdminCustomers, loadPickupPoints, loginAdmin, updatePickupPoint, type AdminCredentials, type AdminCustomer } from '../pickup-api'
 import { AdminCoordinateMap } from './AdminCoordinateMap'
 
 type PointForm = Omit<PickupPoint, 'id'>
@@ -16,6 +16,11 @@ export function AdminPage() {
   const [message, setMessage] = useState('')
   const [loadingPoints, setLoadingPoints] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [customers, setCustomers] = useState<AdminCustomer[]>([])
+  const [customerTotal, setCustomerTotal] = useState(0)
+  const [customersLoading, setCustomersLoading] = useState(false)
+  const [customersError, setCustomersError] = useState('')
+  const [customerSearch, setCustomerSearch] = useState('')
 
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
@@ -28,9 +33,13 @@ export function AdminPage() {
       .then(setPoints)
       .catch((error: Error) => setMessage(error.message))
       .finally(() => setLoadingPoints(false))
+    loadAdminCustomers(credentials)
+      .then((page) => { setCustomers(page.customers); setCustomerTotal(page.total) })
+      .catch((error: Error) => setCustomersError(error.message))
+      .finally(() => setCustomersLoading(false))
   }, [credentials])
 
-  if (!credentials) return <AdminLogin onLogin={(value) => { setLoadingPoints(true); setCredentials(value) }} dark={dark} onToggleTheme={() => setDark((value) => !value)} />
+  if (!credentials) return <AdminLogin onLogin={(value) => { setLoadingPoints(true); setCustomersLoading(true); setCustomersError(''); setCredentials(value) }} dark={dark} onToggleTheme={() => setDark((value) => !value)} />
 
   const editPoint = (point: PickupPoint) => {
     setEditingId(point.id)
@@ -83,7 +92,28 @@ export function AdminPage() {
   const logOut = () => {
     setCredentials(null)
     setPoints([])
+    setCustomers([])
+    setCustomerTotal(0)
+    setCustomerSearch('')
+    setCustomersLoading(false)
   }
+
+  const loadMoreCustomers = async () => {
+    if (!credentials || customersLoading) return
+    setCustomersLoading(true)
+    setCustomersError('')
+    try {
+      const page = await loadAdminCustomers(credentials, customers.length)
+      setCustomers((current) => [...current, ...page.customers])
+      setCustomerTotal(page.total)
+    } catch (error) {
+      setCustomersError(error instanceof Error ? error.message : 'Could not load more customers.')
+    } finally {
+      setCustomersLoading(false)
+    }
+  }
+
+  const visibleCustomers = customers.filter((customer) => `${customer.name} ${customer.email} ${customer.phone}`.toLowerCase().includes(customerSearch.trim().toLowerCase()))
 
   const hasError = /required|valid|could not|unavailable|unauthorized/i.test(message)
 
@@ -106,6 +136,13 @@ export function AdminPage() {
           <button className="primary-button admin-save" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={18} /> : editingId ? <Save size={18} /> : <Plus size={18} />}{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add pickup point'}</button>
         </form>
         <div className="point-manager" aria-busy={loadingPoints}><div className="manager-heading"><span>{loadingPoints ? 'Loading' : `${points.length} active`}</span><h2>Live locations</h2></div>{loadingPoints ? <p className="manager-status" role="status"><LoaderCircle className="spin" /> Loading from Neon…</p> : <div className="admin-point-list">{points.map((point) => <article key={point.id}><span className="admin-point-number"><MapPin size={17} /></span><div><strong>{point.name}</strong><p>{point.address}</p><small>{point.time} · {point.distance} · {point.lat.toFixed(5)}, {point.lng.toFixed(5)}</small></div><div><button onClick={() => editPoint(point)} aria-label={`Edit ${point.name}`} disabled={saving}><Pencil size={16} /></button><button onClick={() => removePoint(point.id)} aria-label={`Delete ${point.name}`} disabled={saving}><Trash2 size={16} /></button></div></article>)}</div>}</div>
+      </section>
+      <section className="customer-manager" aria-busy={customersLoading} aria-labelledby="customer-manager-title">
+        <div className="customer-manager-heading"><div><span className="eyebrow"><Users size={14} /> Customer directory</span><h2 id="customer-manager-title">Your people.</h2><p>Accounts created after email verification. Phone numbers are saved as pickup contacts.</p></div><strong className="customer-count">{customersLoading && customers.length === 0 ? 'Loading…' : `${customerTotal} ${customerTotal === 1 ? 'customer' : 'customers'}`}</strong></div>
+        <label className="customer-search"><Search size={17} /><span className="sr-only">Search customers</span><input type="search" value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Search name, email, or phone" /></label>
+        {customersError && <p className="form-message error" role="alert">{customersError}</p>}
+        {customersLoading && customers.length === 0 ? <p className="manager-status" role="status"><LoaderCircle className="spin" /> Loading customer records…</p> : visibleCustomers.length === 0 ? <p className="customer-empty" role="status">{customerSearch ? 'No customers match that search.' : 'No customer accounts yet.'}</p> : <div className="admin-customer-list" role="list">{visibleCustomers.map((customer) => <article key={customer.id} role="listitem"><div className="customer-avatar" aria-hidden="true">{customer.name.trim().charAt(0).toUpperCase() || 'F'}</div><div className="customer-identity"><strong>{customer.name}</strong><span>Email verified</span></div><a href={`mailto:${customer.email}`}><Mail size={15} />{customer.email}</a><a href={`tel:${customer.phone}`}><Phone size={15} />{customer.phone}</a><small>Joined {new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(customer.created_at))}</small></article>)}</div>}
+        {customers.length < customerTotal && <button className="admin-text-button customer-more" onClick={loadMoreCustomers} disabled={customersLoading}>{customersLoading ? <LoaderCircle size={16} className="spin" /> : null}{customersLoading ? 'Loading…' : 'Load more customers'}</button>}
       </section>
     </main>
   )

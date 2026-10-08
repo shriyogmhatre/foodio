@@ -2,6 +2,8 @@ import type { PickupPoint } from './data'
 
 const API_URL = 'https://br-shy-flower-b3dxsdky-pickups.compute.c-4.ap-southeast-1.aws.neon.tech/'
 export type AdminCredentials = { username: string; password: string }
+export type AdminCustomer = { id: string; email: string; name: string; phone: string; email_verified_at: string; created_at: string }
+export type AdminCustomerPage = { customers: AdminCustomer[]; total: number; offset: number }
 
 async function json<T>(response: Response): Promise<T> {
   const body = await response.json().catch(() => ({})) as T & { error?: string }
@@ -35,6 +37,10 @@ export function updatePickupPoint(point: PickupPoint, credentials: AdminCredenti
 
 export function deletePickupPoint(id: string, credentials: AdminCredentials) {
   return fetch(`${API_URL}?id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: authorization(credentials) } }).then((response) => json<{ deleted: string }>(response))
+}
+
+export function loadAdminCustomers(credentials: AdminCredentials, offset = 0) {
+  return fetch(`/api/admin?offset=${offset}`, { cache: 'no-store', headers: { Authorization: authorization(credentials) } }).then((response) => json<AdminCustomerPage>(response))
 }
 
 export async function loginAdmin(username: string, password: string) {
