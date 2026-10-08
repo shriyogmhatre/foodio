@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUpRight, Camera, MapPin } from 'lucide-react'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -11,6 +11,8 @@ import { loadPickupPoints } from './pickup-api'
 import { AdminPage } from './components/AdminPage'
 import { ProcessSection } from './components/ProcessSection'
 import { Experience } from './components/Experience'
+import { CustomerLogin } from './components/CustomerLogin'
+import { customerRequest, type Customer, type SavedOrder } from './customer-api'
 
 export function App() {
   if (window.location.pathname.startsWith('/admin')) return <AdminPage />
@@ -26,6 +28,14 @@ function Storefront() {
   const [pickupStatus, setPickupStatus] = useState('Loading live pickup points…')
   const [cartOpen, setCartOpen] = useState(false)
   const [completed, setCompleted] = useState(false)
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [ordering, setOrdering] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+  const [order, setOrder] = useState<SavedOrder | null>(null)
+  const requestId = useRef<string | null>(null)
+  const orderLock = useRef(false)
+  useEffect(() => { customerRequest<{ customer: Customer | null }>('session').then((result) => setCustomer(result.customer)).catch(() => {}) }, [])
   const count = useMemo(() => lines.reduce((sum, line) => sum + line.quantity, 0), [lines])
   const mapPickup = pickup ?? points[0] ?? defaultPickupPoints[0]
 
@@ -48,6 +58,8 @@ function Storefront() {
   }, [])
 
   const addItem = (item: MenuItem) => {
+    if (orderLock.current) return
+    requestId.current = null; setCheckoutError('')
     if (lines.length === 0) setPickup(null)
     setLines((current) => {
       const found = current.find((line) => line.item.id === item.id)
@@ -58,13 +70,28 @@ function Storefront() {
   }
 
   const changeQuantity = (id: string, delta: number) => {
+    if (orderLock.current) return
+    requestId.current = null; setCheckoutError('')
     setLines((current) => current.map((line) => line.item.id === id ? { ...line, quantity: line.quantity + delta } : line).filter((line) => line.quantity > 0))
   }
 
-  const checkout = () => {
-    if (!pickup) return
-    setCompleted(true)
-    setLines([])
+  const checkout = async () => {
+    if (!pickup || !lines.length || orderLock.current) return
+    if (!customer) { setCartOpen(false); setAuthOpen(true); return }
+    orderLock.current = true; setOrdering(true); setCheckoutError('')
+    requestId.current ??= crypto.randomUUID()
+    try {
+      const result = await customerRequest<{ order: SavedOrder }>('order', { requestId: requestId.current, pickupId: pickup.id, items: lines.map((line) => ({ id: line.item.id, quantity: line.quantity })) })
+      setOrder(result.order); setCompleted(true); setLines([]); requestId.current = null
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not place your order. Your bag is saved.'
+      setCheckoutError(message)
+      if (message === 'Please sign in to continue.') setCustomer(null)
+    } finally { orderLock.current = false; setOrdering(false) }
+  }
+  const logout = async () => {
+    try { await customerRequest('logout', {}); setCustomer(null); setCheckoutError('') }
+    catch { setCheckoutError('Could not sign out. Please try again.') }
   }
 
   return (
@@ -81,7 +108,8 @@ function Storefront() {
         <section className="closing-cta"><div className="cta-pin"><MapPin size={18} /> Made in Panvel</div><span>Hot, fresh, close by</span><h2>Your next favourite<br />is waiting.</h2><p>Choose your food. Choose your pickup. We’ll handle the delicious part.</p><a href="#menu" className="primary-button">Build your order <ArrowUpRight /></a></section>
       </main>
       <footer><div className="footer-lead"><div className="brand footer-brand"><span className="brand-mark">F</span><span><strong>FOODIO</strong><br />SHAWARMA STUDIO</span></div><p>Big flavour, timed for pickup.<br />Born and built in Panvel.</p></div><div className="footer-links"><span>Explore</span><a href="#menu">Menu</a><a href="#pickup">Pickup points</a><a href="#story">Our story</a></div><div className="footer-links"><span>Visit</span><a href="/admin">Admin studio</a><a href="mailto:hello@foodio.food">hello@foodio.food</a></div><a className="social" href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram"><Camera /></a><small>© 2026 Foodio · Made fresh in Panvel</small></footer>
-      <CartDrawer open={cartOpen} lines={lines} points={points} pickup={pickup} completed={completed} onClose={() => setCartOpen(false)} onChange={changeQuantity} onSelectPickup={setPickup} onCheckout={checkout} />
+      <CartDrawer open={cartOpen} lines={lines} points={points} pickup={pickup} completed={completed} onClose={() => { if (!ordering) setCartOpen(false) }} onChange={changeQuantity} onSelectPickup={(point) => { if (!ordering) { setPickup(point); requestId.current = null } }} onCheckout={checkout} customer={customer} ordering={ordering} checkoutError={checkoutError} order={order} onLogout={logout} />
+      {authOpen && <CustomerLogin onClose={() => { setAuthOpen(false); setCartOpen(true) }} onLogin={(value) => { setCustomer(value); setAuthOpen(false); setCartOpen(true); setCheckoutError('') }} />}
       <Experience count={count} onBag={() => { setCompleted(false); setCartOpen(true) }} />
       {count > 0 && <button className="mobile-cart" onClick={() => { setCompleted(false); setCartOpen(true) }}><span>View bag · {count} item{count === 1 ? '' : 's'}</span><strong>₹{lines.reduce((sum, line) => sum + line.item.price * line.quantity, 0)}</strong></button>}
     </>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, CheckCircle2, LoaderCircle, LocateFixed, MapPin, Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import type { MenuItem, PickupPoint } from '../data'
+import type { Customer, SavedOrder } from '../customer-api'
 
 export type CartLine = { item: MenuItem; quantity: number }
 
@@ -14,6 +15,11 @@ type CartDrawerProps = {
   onChange: (id: string, delta: number) => void
   onSelectPickup: (point: PickupPoint) => void
   onCheckout: () => void
+  customer: Customer | null
+  ordering: boolean
+  checkoutError: string
+  order: SavedOrder | null
+  onLogout: () => void
 }
 
 function distanceKm(latitude: number, longitude: number, point: PickupPoint) {
@@ -25,7 +31,7 @@ function distanceKm(latitude: number, longitude: number, point: PickupPoint) {
   return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-export function CartDrawer({ open, lines, points, pickup, completed, onClose, onChange, onSelectPickup, onCheckout }: CartDrawerProps) {
+export function CartDrawer({ open, lines, points, pickup, completed, onClose, onChange, onSelectPickup, onCheckout, customer, ordering, checkoutError, order, onLogout }: CartDrawerProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const drawerRef = useRef<HTMLElement>(null)
   const onCloseRef = useRef(onClose)
@@ -81,7 +87,7 @@ export function CartDrawer({ open, lines, points, pickup, completed, onClose, on
         <span className="sheet-handle" aria-hidden="true" />
         <div className="drawer-head"><div><span>Your order</span><h2 id="cart-title">The good stuff.</h2></div><button ref={closeRef} className="icon-button" onClick={onClose} aria-label="Close bag"><X /></button></div>
         {completed ? (
-          <div className="success-state"><CheckCircle2 size={56} /><h3>Order confirmed!</h3><p>We’ll have it warm and ready at <strong>{pickup?.name ?? 'your pickup point'}</strong>.</p><button className="primary-button" onClick={onClose}>Done</button></div>
+          <div className="success-state"><CheckCircle2 size={56} /><h3>Order received!</h3><p>Your order is saved for <strong>{pickup?.name ?? 'your pickup point'}</strong>. No online payment has been taken.</p><p className="order-reference">Reference: {order?.id}</p><p>Total: ₹{(order?.total_paise ?? 0) / 100}</p><button className="primary-button" onClick={onClose}>Done</button></div>
         ) : lines.length === 0 ? (
           <div className="empty-state"><ShoppingBag size={42} /><h3>Your bag is empty.</h3><p>Add a wrap or plate and we’ll get cooking.</p><button className="primary-button" onClick={onClose}>Browse menu</button></div>
         ) : (
@@ -102,7 +108,7 @@ export function CartDrawer({ open, lines, points, pickup, completed, onClose, on
               {locationMessage && <p className="location-message" role="status">{locationMessage}</p>}
               {points.length === 0 ? <p className="pickup-empty" role="alert">Pickup points are temporarily unavailable.</p> : <div className="cart-pickup-list" role="radiogroup" aria-label="Choose your pickup point">{points.map((point) => <button type="button" key={point.id} role="radio" aria-checked={pickup?.id === point.id} className={pickup?.id === point.id ? 'selected' : ''} onClick={() => { onSelectPickup(point); setLocationMessage('') }}><span className="cart-pickup-icon">{pickup?.id === point.id ? <Check size={15} /> : <MapPin size={15} />}</span><span><strong>{point.name}</strong><small>{point.address} · Ready in {point.time}</small></span></button>)}</div>}
             </section>
-            <div className="checkout-block"><div><span>Subtotal</span><strong>₹{subtotal}</strong></div><small id="pickup-required-message">{pickup ? `Pickup: ${pickup.name} · No pickup fee.` : 'Choose a pickup point to continue.'}</small><button className="primary-button checkout-button" onClick={onCheckout} disabled={!pickup || points.length === 0} aria-describedby="pickup-required-message">{pickup ? `Place pickup order · ₹${subtotal}` : 'Choose a pickup point'}</button></div>
+            <div className="checkout-block"><div><span>Subtotal</span><strong>₹{subtotal}</strong></div><small id="pickup-required-message">{pickup ? `Pickup: ${pickup.name} · No pickup fee.` : 'Choose a pickup point to continue.'}</small>{customer ? <section className="customer-summary"><strong>{customer.name}</strong> · {customer.email}<br />Pickup contact: {customer.phone} (not verified)<button disabled={ordering} onClick={onLogout}>Sign out / change details</button></section> : <p className="customer-summary">Email verification is required to place your order.</p>}{checkoutError && <p className="checkout-error" role="alert">{checkoutError}</p>}<button className="primary-button checkout-button" onClick={onCheckout} disabled={ordering || !pickup || points.length === 0} aria-describedby="pickup-required-message">{ordering ? 'Saving your order…' : !pickup ? 'Choose a pickup point' : customer ? `Place pickup order · ₹${subtotal}` : 'Sign in to order'}</button></div>
           </>
         )}
       </aside>
